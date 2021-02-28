@@ -1,0 +1,168 @@
+###################################
+### MIBs Cables
+###################################
+TX:  1.3.6.1.2.1.10.127.1.2.2.1.3.2
+RX:  1.3.6.1.2.1.10.127.1.1.1.1.6.3
+MER: 1.3.6.1.2.1.10.127.1.1.4.1.5.3
+SNR: 1.3.6.1.2.1.10.127.1.1.4.1.5.3
+
+
+
+###################################
+### MIBs Router
+###################################
+IF-MIB::ifDescr | grep -iw NomeInterface
+check_interfaces_routers!GigabitEthernet7/1/4 
+check_interfaces_routers!Eth-Trunk3
+check_interfaces_routers!Tunnel7/0/10
+check_interfaces_routers!Tunnel2/0/0
+check_interfaces_routers!TENGIGABITETHERNET1/0/0
+
+check_trafego_interface_routers_in!GIGABITETHERNET3/0/2
+check_trafego_interface_routers_out!GIGABITETHERNET3/0/2
+INDICE=$(snmpwalk -v2c -c $COMMUNITY $1 IF-MIB::ifDescr | grep -iw $2 | awk -F= '{print $1}' | awk -F. '{print $2}')
+OUT1=$(snmpwalk -v2c -c $COMMUNITY $1 ifOutOctets.$INDICE| awk '{print $4}')
+IN1=$(snmpwalk -v2c -c $COMMUNITY $1 ifInOctets.$INDICE | awk '{print $4}')
+
+
+
+check_bgp_status!.1.3.6.1.2.1.15.3.1.2.IPdoBGP
+
+
+###################################
+### MIBs Servers
+###################################
+check_porcentagem_disk!/tmp
+INDICE=$(snmpwalk -v2c -c 'public' $1 HOST-RESOURCES-MIB::hrStorageDescr | grep $2 | awk -F= '{print $1}' | awk -F. '{print $2}')
+USADO=$(snmpwalk -v2c -Oqv  -c 'public' $1 HOST-RESOURCES-MIB::hrStorageUsed.$INDICE)
+TOTAL=$(snmpwalk -v2c -Oqv  -c 'public' $1 HOST-RESOURCES-MIB::hrStorageSize.$INDICE)
+PORCENTAGEM=$(echo "scale=2;(($USADO / $TOTAL) * 100) + 1" | bc -l | awk -F. '{print $1}' ) 
+
+
+check_cpu_solaris
+OID_CPU_IDLE=".1.3.6.1.4.1.2021.11.11.0";
+OID_CPU_USER=".1.3.6.1.4.1.2021.11.9.0";
+
+check_memoria_solaris
+MIB_MEM_TOTAL="UCD-SNMP-MIB::memTotalReal.0";
+MIB_MEM_FREE="UCD-SNMP-MIB::memAvailReal.0";
+VAR_MEM_USADA=$(($VAR_MEM_TOTAL-$VAR_MEM_FREE));
+PORCENTAGEM=$(echo "scale=2;(($VAR_MEM_USADA / $VAR_MEM_TOTAL) * 100)" | bc -l | awk -F. '{print $1}' )
+
+check_proxy_mta
+OID_PROXY="SNMPv2-SMI::enterprises.3606.7.26.1.1.1.3.0";
+
+check_firewall_solaris
+OID_IPF_STATUS=".1.3.6.1.4.1.2021.8.1.101.26"
+
+# só muda o filtro do serviço
+check_cron - HOST-RESOURCES-MIB::hrSWRunName | grep -w "cron\|crond"
+check_bind_named - HOST-RESOURCES-MIB::hrSWRunName 
+check_incognito_cfmcmdrd -HOST-RESOURCES-MIB::hrSWRunName | grep -w "cfmcmdrd"
+check_incognito_cfmproxycmdrd - HOST-RESOURCES-MIB::hrSWRunName
+check_incognito_ipcmdrd - HOST-RESOURCES-MIB::hrSWRunName | grep -w "ipcmdrd"
+
+
+MIBS DHCP Incognito
+OID_DIS="1.3.6.1.4.1.3606.7.1.1.1.1.1.3.1.1.0";
+OID_OFFERS="1.3.6.1.4.1.3606.7.1.1.1.1.1.3.2.1.0";
+OID_REQ="1.3.6.1.4.1.3606.7.1.1.1.1.1.3.1.2.0";
+OID_ACK="1.3.6.1.4.1.3606.7.1.1.1.1.1.3.2.2.0";
+OID_TFTP_REQUEST=".1.3.6.1.4.1.3606.7.16.1.1.1.1.1.1.0";
+OID_TFTP_SUCCESS=".1.3.6.1.4.1.3606.7.16.1.1.1.1.2.1.0";
+
+
+DHCP Sync
+MIB=".1.3.6.1.4.1.2021.2789.32.101.1"
+OID_FAILOVER_STATUS="1.3.6.1.4.1.3606.7.1.2.100.1.1.9.2.0";
+OID_FAILOVER_RESULT="1.3.6.1.4.1.3606.7.1.2.100.1.1.9.1.0";
+
+
+###################################
+### MIBs GPON
+###################################
+check_temp_slot_gpon
+OID_TEMP_MOTHER_BOARD="1.3.6.1.4.1.2011.2.6.7.1.1.2.1.10.0.1";
+OID_TEMP_CHASSIS=".1.3.6.1.4.1.9.9.13.1.3.1.3.1";
+OID_TEMP_SLOT="1.3.6.1.4.1.2011.2.6.7.1.1.2.1.10.0"
+
+
+check_cpu_slot_gpon
+OID_CPU_SLOT="1.3.6.1.4.1.2011.2.6.7.1.1.2.1.5.0"
+
+
+CPU huawei
+OID_SLOT1=".1.3.6.1.4.1.2011.6.3.4.1.4.0.133.0";
+OID_SLOT2=".1.3.6.1.4.1.2011.6.3.4.1.4.0.134.0";
+
+###################################
+### MIBs CMTSs
+###################################
+
+check_placa_proc_arris_e6000!UCAM5
+check_placa_proc_arris_c4!UCAM5
+
+check_temp_arris_e6000
+OID_TEMP_FAN=".1.3.6.1.4.1.4998.1.1.10.1.4.17.1.5";
+
+
+check_temp_arris
+OID_TEMP_SCM_A=".1.3.6.1.4.1.4998.1.1.10.1.4.2.1.29.1.20";
+OID_TEMP_SCM_B=".1.3.6.1.4.1.4998.1.1.10.1.4.2.1.29.1.21";
+OID_TEMP_FCM_A=".1.3.6.1.4.1.4998.1.1.10.1.4.2.1.29.1.18";
+OID_TEMP_FCM_B=".1.3.6.1.4.1.4998.1.1.10.1.4.2.1.29.1.19";
+
+
+check_temp_cisco
+OID_TEMP_CPU=".1.3.6.1.4.1.9.9.13.1.3.1.3.2";
+OID_TEMP_CHASSIS=".1.3.6.1.4.1.9.9.13.1.3.1.3.1";
+
+check_temp_cisco_cbr8
+OID_TEMP_CPU=".1.3.6.1.4.1.9.9.91.1.1.1.1.4.10015";
+OID_TEMP_CHASSIS=".1.3.6.1.4.1.9.9.91.1.1.1.1.4.10014";
+
+check_temp_casa
+OID_QAM0=".1.3.6.1.4.1.20858.10.33.1.3.1.2.0"  
+OID_SMM6=".1.3.6.1.4.1.20858.10.33.1.3.1.2.96" 
+OID_SMM7=".1.3.6.1.4.1.20858.10.33.1.3.1.2.112"
+OID_UP13=".1.3.6.1.4.1.20858.10.33.1.3.1.2.208"
+
+
+check_temp_motorola
+OID_TEMP_750=".1.3.6.1.4.1.4981.5.1.1.4.1";
+OID_TEMP_DIMM=".1.3.6.1.4.1.4981.5.1.1.4.2";
+OID_TEMP_DC2DC=".1.3.6.1.4.1.4981.5.1.1.4.3";
+OID_TEMP_XFAB=".1.3.6.1.4.1.4981.5.1.1.4.4";
+OID_TEMP_FAN=".1.3.6.1.4.1.4981.5.1.1.4.5";
+
+
+###################################
+### MIBs Now
+###################################
+check_porcentagem_disk_cache_now!var
+check_temperature_qam_now
+check_memoria_usada_str_now
+check_cpu_str_now
+check_porcentagem_disk_cache_now!arroyo
+
+
+QAN NOW
+OID_TEMP_CPU=".1.3.6.1.4.1.1429.1.12.1.2.4.4.0";
+OID_TEMP_CHASSIS=".1.3.6.1.4.1.1429.1.12.1.2.4.5.0";
+
+
+###################################
+### MIBs FCC
+###################################
+
+
+###################################
+### MIBs UPS
+###################################
+
+
+###################################
+### MIBs Temp cache now
+###################################
+OID_TEMP_TEMPERATURA1=".1.3.6.1.4.1.15946.1.2.4.1.1.4.16";
+OID_TEMP_TEMPERATURA2=".1.3.6.1.4.1.15946.1.2.4.1.1.4.15";
